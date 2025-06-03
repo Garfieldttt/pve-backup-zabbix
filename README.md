@@ -46,6 +46,7 @@ This template is designed for use with the **Zabbix Agent (active)** and require
 3. Install required tools and deploy the vzdump hook script on your Proxmox host:
    ```bash
    apt update && apt install -y jq
+   touch /var/log/backups && chmod 755 /var/log/backups
 
    cd /tmp/
    git clone https://github.com/Garfieldttt/pve-backup-zabbix.git
