@@ -1,5 +1,4 @@
 # Zabbix-Proxmox-Backup  
-![Zabbix](https://img.shields.io/badge/Zabbix-6.0%2B-blue) ![License](https://img.shields.io/badge/License-MIT-blue.svg)
 
 ## Notice  
 This template is designed for use with the **Zabbix Agent (active)** and requires **Proxmox VE** with `vzdump`-based backup configuration.
@@ -53,10 +52,5 @@ This template is designed for use with the **Zabbix Agent (active)** and require
 
 Use this template to monitor **Proxmox VE VM backups** via Zabbix.  
 It helps detect failed jobs, long durations, missing templates, and unusual backup sizes.
-
----
-
-## License  
-MIT – use freely, contribute, adapt as needed.
 
 ---
