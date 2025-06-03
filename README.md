@@ -51,6 +51,10 @@ This template is designed for use with the **Zabbix Agent (active)** and require
 
    sudo cp pve-backup-zabbix/7.0/vzdump-hook-json.sh /usr/local/bin/vzdump-hook-json.sh
    sudo chmod +x /usr/local/bin/vzdump-hook-json.sh
+   sudo touch /var/log/vzdump-hook-debug.log
+   sudo chown root:root /var/log/vzdump-hook-debug.log
+   sudo chmod 644 /var/log/vzdump-hook-debug.log
+
 
 
 ---
