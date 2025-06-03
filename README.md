@@ -41,7 +41,7 @@ This template is designed for use with the **Zabbix Agent (active)** and require
 
 ## Installation & Setup
 
-1. Import the XML template into **Zabbix**.
+1. Import the YAML template into **Zabbix**.
 2. Assign the template to your **Proxmox VE host**.
 3. Install required tools and deploy the vzdump hook script on your Proxmox host:
    ```bash
