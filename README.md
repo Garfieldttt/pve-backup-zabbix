@@ -43,8 +43,16 @@ This template is designed for use with the **Zabbix Agent (active)** and require
 
 1. Import the XML template into **Zabbix**.
 2. Assign the template to your **Proxmox VE host**.
-3. Ensure the backup data (status, timestamps, size) is collected via agent or script.
-4. Use preprocessing for timestamp conversion and size normalization (if needed).
+3. Install required tools and deploy the vzdump hook script on your Proxmox host:
+   ```bash
+   apt update && apt install -y jq
+
+   cd /tmp/
+   git clone https://github.com/Garfieldttt/pve-backup-zabbix.git
+
+   sudo cp pve-backup-zabbix/7.0/vzdump-hook-json.sh /usr/local/bin/vzdump-hook-json.sh
+   sudo chmod +x /usr/local/bin/vzdump-hook-json.sh
+
 
 ---
 
