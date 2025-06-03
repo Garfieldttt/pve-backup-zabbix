@@ -151,7 +151,7 @@ zabbix_export:
                 - '$.backups[*]'
       macros:
         - macro: '{$BACKUP_LOCATION}'
-          value: /var/log/pve-backup.json
+          value: /var/log/backups.log
       valuemaps:
         - uuid: 446a711ec6424c7ea2ff76f6a64b0707
           name: BACKUP-STATUS
