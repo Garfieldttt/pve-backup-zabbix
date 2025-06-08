@@ -10,7 +10,7 @@ zabbix_export:
       description: |
         Author: Thomas Rzen
         
-        For more information, visit https://github.com/Garfieldttt/pve-backup-zabbix/tree/zabbix
+        For more information, visit https://github.com/Garfieldttt/pve-backup-zabbix
       groups:
         - name: Templates
       items:
@@ -96,6 +96,9 @@ zabbix_export:
                 - type: RTRIM
                   parameters:
                     - '"]'
+                - type: DISCARD_UNCHANGED
+                  parameters:
+                    - ''
               master_item:
                 key: 'vfs.file.contents[{$BACKUP_LOCATION}]'
               tags:
