@@ -44,6 +44,9 @@ zabbix_export:
                 - type: RTRIM
                   parameters:
                     - '"]'
+                - type: DISCARD_UNCHANGED
+                  parameters:
+                    - ''
               master_item:
                 key: 'vfs.file.contents[{$BACKUP_LOCATION}]'
               tags:
@@ -51,10 +54,7 @@ zabbix_export:
                   value: end-time
               trigger_prototypes:
                 - uuid: 204da82367114c24a98bfc1cf5d2d40d
-                  expression: |
-                    max(/Template Proxmox VE Backup/backup.endtime[{#VMID}],{$BACKUP_TIME:"{#VMID}"})
-                    =
-                    min(/Template Proxmox VE Backup/backup.endtime[{#VMID}],{$BACKUP_TIME:"{#VMID}"})
+                  expression: 'nodata(/Template Proxmox VE Backup/backup.endtime[{#VMID}],{$BACKUP_TIME:"{#VMID}"})=1'
                   name: 'No backup in {$BACKUP_TIME} (VMID: {#VMID})'
                   priority: HIGH
                   manual_close: 'YES'
