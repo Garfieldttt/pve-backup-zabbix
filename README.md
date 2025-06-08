@@ -45,29 +45,23 @@ This template is designed for use with the **Zabbix Agent (active)** and require
 2. Assign the template to your **Proxmox VE host**.
 3. Install required tools and deploy the vzdump hook script on your Proxmox host:
 ### 1. Ins temporäre Verzeichnis wechseln
-```bash
+#!/bin/bash
+
+# 1. Change to the temporary directory
 cd /tmp/
-```
 
-### 2. Repository klonen
-```bash
+# 2. Clone the repository
 git clone https://github.com/Garfieldttt/pve-backup-zabbix.git
-```
 
-### 3. Skript kopieren und ausführbar machen
-```bash
+# 3. Copy the script and make it executable
 sudo cp pve-backup-zabbix/7.0/vzdump-hook-json.sh /usr/local/bin/vzdump-hook-json.sh
 sudo chmod +x /usr/local/bin/vzdump-hook-json.sh
-```
 
-### 4. Crontab öffnen und Job hinzufügen
-```bash
+# 4. Open crontab and add the job (every 10 minutes)
 crontab -e
-```
-> **In den Editor fügen Sie am Ende folgende Zeile ein:**
-> ```cron
-> */10 * * * * /usr/local/bin/vzdump-hook-json.sh
-> ```
+# Then append this line:
+# */10 * * * * /usr/local/bin/vzdump-hook-json.sh
+
 
 ---
 
