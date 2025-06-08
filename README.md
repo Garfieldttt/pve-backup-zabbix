@@ -4,8 +4,6 @@
 **Template:** `Template Proxmox VE Backup`  
 **Author:** Thomas Rzen  
 **Zabbix Version:** 7.0+  
-**Source:** [GitHub – pve-backup-zabbix (Branch: zabbix)](https://github.com/Garfieldttt/pve-backup-zabbix/tree/zabbix)
-
 ---
 
 ## 💡 Overview
