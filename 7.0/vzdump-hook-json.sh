@@ -1,57 +1,49 @@
 #!/bin/bash
 
-log_dir="/var/log/vzdump"
-output_file="/var/log/backups.log"
-hostname="pve"
+LOG_DIR="/var/log/vzdump"
+OUTPUT="/var/log/backups.log"
+NODE="pve"
 
-echo '{ "backups": [' > "$output_file"
+echo '{ "backups": [' > "$OUTPUT"
 
-first=1
+first_entry=true
 
-for log_file in "$log_dir"/*.log; do
-    [[ -e "$log_file" ]] || continue
+for logfile in "$LOG_DIR"/*.log; do
+    [ -e "$logfile" ] || continue
 
-    vmid=$(basename "$log_file" | cut -d'-' -f2 | cut -d'.' -f1)
-    name="null"
-    start=0
-    end=0
+    vmid=$(basename "$logfile" | cut -d'-' -f2 | cut -d'.' -f1)
+    name=$(grep -m1 "VM Name:" "$logfile" | sed -E 's/.*VM Name:\s*//')
+    [[ -z "$name" ]] && name=null
+
+    start=$(grep -m1 "Starting Backup" "$logfile" | cut -d' ' -f1-2)
+    end=$(grep -m1 "Finished Backup" "$logfile" | cut -d' ' -f1-2)
+    [[ -z "$end" ]] && end=$(date '+%F %T')
+
+    start_ts=$(date -d "$start" +%s 2>/dev/null || echo 0)
+    end_ts=$(date -d "$end" +%s 2>/dev/null || echo "$start_ts")
+
     status="FAILED"
-    size_bytes=0
+    grep -q "Finished Backup" "$logfile" && status="OK"
+    grep -q "status = running" "$logfile" && status="running"
 
-    while IFS= read -r line; do
-        if [[ "$line" =~ Starting\ Backup\ of\ VM ]]; then
-            start=$(date -d "$(echo "$line" | cut -d' ' -f1-2)" +%s)
-        elif [[ "$line" =~ "VM Name:" ]]; then
-            name=$(echo "$line" | sed -n 's/.*VM Name: \(.*\)/\1/p' | sed 's/"/\\"/g')
-        elif [[ "$line" =~ "transferred" ]]; then
-            size_bytes=$(echo "$line" | grep -oE '[0-9.]+ [KMGT]iB' | sed 's/ //g' | numfmt --from=iec 2>/dev/null)
-            [[ -z "$size_bytes" ]] && size_bytes=0
-        elif [[ "$line" =~ "Finished Backup" ]]; then
-            status="OK"
-        fi
-        end=$(date -d "$(echo "$line" | cut -d' ' -f1-2)" +%s)
-    done < "$log_file"
+    size_bytes=$(grep -i "transferred" "$logfile" | grep -Eo '[0-9.]+ GiB' | awk '{printf "%.0f\n", $1 * 1024 * 1024 * 1024}' | tail -n1)
+    [[ -z "$size_bytes" ]] && size_bytes=0
 
-    # Wenn "status = running" in Log steht, aber kein "Finished Backup"
-    if grep -q "INFO: status = running" "$log_file" && ! grep -q "INFO: Finished Backup" "$log_file"; then
-        status="running"
-    fi
+    $first_entry || echo "," >> "$OUTPUT"
+    first_entry=false
 
-    [[ $first -eq 0 ]] && echo "," >> "$output_file"
-    first=0
-
-    cat <<EOF >> "$output_file"
-  {
-    "vmid": "$vmid",
-    "name": "$name",
-    "node": "$hostname",
-    "start": $start,
-    "end": $end,
-    "status": "$status",
-    "size_bytes": $size_bytes
-  }
+    cat <<EOF >> "$OUTPUT"
+    {
+      "vmid": "$vmid",
+      "name": ${name:+\"$name\"},
+      "node": "$NODE",
+      "start": $start_ts,
+      "end": $end_ts,
+      "status": "$status",
+      "size_bytes": $size_bytes
+    }
 EOF
 
 done
 
-echo "] }" >> "$output_file"
+echo "] }" >> "$OUTPUT"
