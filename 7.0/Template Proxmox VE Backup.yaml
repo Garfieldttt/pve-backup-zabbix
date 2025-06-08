@@ -29,7 +29,7 @@ zabbix_export:
           delay: '0'
           item_prototypes:
             - uuid: 319bb0450d6e43838c726a82d764c71f
-              name: 'Backup end-time {#VMID}'
+              name: 'Backup end-time {#VMID} {#NAME}'
               type: DEPENDENT
               key: 'backup.endtime[{#VMID}]'
               delay: '0'
@@ -49,15 +49,19 @@ zabbix_export:
               tags:
                 - tag: pve-backup
                   value: end-time
+              trigger_prototypes:
+                - uuid: 204da82367114c24a98bfc1cf5d2d40d
+                  expression: 'max(/Template Proxmox VE Backup/backup.endtime[{#VMID}],{$BACKUP_TIME})< last(/Template Proxmox VE Backup/backup.endtime[{#VMID}])'
+                  name: 'No backup in {$BACKUP_TIME} (VMID: {#VMID})'
+                  priority: HIGH
+                  manual_close: 'YES'
             - uuid: c023e0ec96c94720a38617b463763966
-              name: 'Backup size {#VMID}'
+              name: 'Backup size (last) - VM {#VMID} ({#NAME})'
               type: DEPENDENT
               key: 'backup.size[{#VMID}]'
               delay: '0'
               value_type: FLOAT
               units: byte
-              valuemap:
-                name: BACKUP-STATUS
               preprocessing:
                 - type: JSONPATH
                   parameters:
@@ -74,7 +78,7 @@ zabbix_export:
                 - tag: pve-backup
                   value: size
             - uuid: 30520dd8833c4b8c81d4b6e3dc69e673
-              name: 'Backup start-time {#VMID}'
+              name: 'Backup start-time {#VMID} {#NAME}'
               type: DEPENDENT
               key: 'backup.starttime[{#VMID}]'
               delay: '0'
@@ -95,7 +99,7 @@ zabbix_export:
                 - tag: pve-backup
                   value: start-time
             - uuid: 9146e966a985489ca0498fcb0723c3b6
-              name: 'Backup status {#VMID}'
+              name: 'Backup status {#VMID} {#NAME}'
               type: DEPENDENT
               key: 'backup.status[{#VMID}]'
               delay: '0'
@@ -121,8 +125,12 @@ zabbix_export:
                     - '1'
                 - type: STR_REPLACE
                   parameters:
-                    - ERR
+                    - FAILED
                     - '0'
+                - type: STR_REPLACE
+                  parameters:
+                    - running
+                    - '2'
               master_item:
                 key: 'vfs.file.contents[{$BACKUP_LOCATION}]'
               tags:
@@ -152,6 +160,9 @@ zabbix_export:
       macros:
         - macro: '{$BACKUP_LOCATION}'
           value: /var/log/backups.log
+        - macro: '{$BACKUP_TIME}'
+          value: 48h
+          description: 'The time period Zabbix waits before triggering if no backup has been made. Possible values: s = seconds, m = minutes, h = hours, d = days.'
       valuemaps:
         - uuid: 446a711ec6424c7ea2ff76f6a64b0707
           name: BACKUP-STATUS
@@ -160,3 +171,5 @@ zabbix_export:
               newvalue: OK
             - value: '0'
               newvalue: ERROR
+            - value: '2'
+              newvalue: RUNNING
