@@ -51,7 +51,7 @@ zabbix_export:
                   value: end-time
               trigger_prototypes:
                 - uuid: 204da82367114c24a98bfc1cf5d2d40d
-                  expression: 'max(/Template Proxmox VE Backup/backup.endtime[{#VMID}],{$BACKUP_TIME})< last(/Template Proxmox VE Backup/backup.endtime[{#VMID}])'
+                  expression: 'max(/Template Proxmox VE Backup/backup.endtime[{#VMID}],{$BACKUP_TIME})<= last(/Template Proxmox VE Backup/backup.endtime[{#VMID}])'
                   name: 'No backup in {$BACKUP_TIME} (VMID: {#VMID})'
                   priority: HIGH
                   manual_close: 'YES'
