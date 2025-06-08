@@ -63,6 +63,7 @@ sudo chmod +x /usr/local/bin/vzdump-hook-json.sh
 # Add the cron job if it doesn't already exist
 CRON_JOB="*/10 * * * * /usr/local/bin/vzdump-hook-json.sh"
 (crontab -l 2>/dev/null | grep -Fv "$CRON_JOB" ; echo "$CRON_JOB") | crontab -
+```
 ---
 
 
