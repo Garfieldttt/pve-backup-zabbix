@@ -1,75 +1,120 @@
-# Zabbix-Proxmox-Backup  
 
-## Notice  
-This template is designed for use with the **Zabbix Agent (active)** and requires **Proxmox VE** with `vzdump`-based backup configuration.
+# Zabbix Integration: Proxmox VE Backup Monitoring
 
----
-
-# The `template_app_proxmox_backup` includes:
-
-| Item                            | Description                                                  |
-|---------------------------------|--------------------------------------------------------------|
-| **backup.status**               | Backup success/failure status (0 = fail, 1 = success). + trigger      |
-| **Trigger: No Recent Backup** | Fires if **no backup has occurred within the last 48 hours**. The time period is configurable via `{$BACKUP_TIME}`. |
-| **backup.starttime**            | Unix timestamp of the last backup start.                     |
-| **backup.endtime**              | Unix timestamp of the last backup end.                       |
-| **backup.starttime (text)**     | Converted start timestamp (human-readable).                  |
-| **backup.endtime (text)**       | Converted end timestamp (human-readable).                    |
-| **backup.duration** *(opt.)*    | Optional: backup runtime (in seconds or minutes).            |
-| **backup.size**                 | Size of the backup (in bytes, MB, or GB).                    |
+**Template:** `Template Proxmox VE Backup`  
+**Author:** Thomas Rzen  
+**Zabbix Version:** 7.0+  
+**Source:** [GitHub – pve-backup-zabbix (Branch: zabbix)](https://github.com/Garfieldttt/pve-backup-zabbix/tree/zabbix)
 
 ---
 
-## Features
+## 💡 Overview
 
-- VM discovery via Low-Level Discovery (LLD)
-- Backup monitoring per VM based on `vzdump` logs
-- Timestamp conversion via preprocessing (to readable datetime)
-- Backup size tracking
-- Tagged items and triggers for filtering and automation
-- Trigger prototypes for:
-  - Failed backups
+Agentless monitoring of Proxmox VE backup jobs:
+- Reads JSON log files (e.g., `/var/log/backups.log`)
+- Detects VMs via Low-Level-Discovery
+- Extracts backup start/end times, size & status
+- Triggers if a backup is missing or fails
 
 ---
 
-## Prerequisites
+## 🔍 Requirements
 
-- **Proxmox VE** host with regular vzdump-based backups
-- **Zabbix Agent (active)** installed and configured
-- **Zabbix Server 7.0 or higher**
-
----
-
-## Installation & Setup
-
-1. Import the YAML template into **Zabbix**.
-2. Assign the template to your **Proxmox VE host**.
-3. Install required tools and deploy the vzdump hook script on your Proxmox host:
-### 1. Ins temporäre Verzeichnis wechseln
-#!/bin/bash
-
-## 1. Change to the temporary directory
-cd /tmp/
-
-## 2. Clone the repository
-git clone https://github.com/Garfieldttt/pve-backup-zabbix.git
-
-## 3. Copy the script and make it executable
-sudo cp pve-backup-zabbix/7.0/vzdump-hook-json.sh /usr/local/bin/vzdump-hook-json.sh
-sudo chmod +x /usr/local/bin/vzdump-hook-json.sh
-
-## 4. Open crontab and add the job (every 10 minutes)
-crontab -e
-## Then append this line:
-*/10 * * * * /usr/local/bin/vzdump-hook-json.sh
-
+- Proxmox VE generates a JSON-format backup log  
+- Backup log is accessible by Zabbix server or proxy  
+- Template is applied to the host that can read the log file
 
 ---
 
+## ⚙️ Macros
 
-## Usage
-
-Use this template to monitor **Proxmox VE VM backups** via Zabbix.  
-It helps detect failed jobs, long durations, missing templates, and unusual backup sizes.
+| Macro                 | Default Value                | Description                                         |
+|-----------------------|------------------------------|-----------------------------------------------------|
+| `{$BACKUP_LOCATION}`  | `/var/log/backups.log`       | Path to the JSON backup log                        |
+| `{$BACKUP_TIME}`      | `48h`                        | Time threshold to trigger alert on missing backup  |
 
 ---
+
+## 📦 Value Maps
+
+**Name:** `BACKUP-STATUS`
+
+| Value | Meaning  |
+|-------|----------|
+| 1     | OK       |
+| 0     | ERROR    |
+| 2     | RUNNING  |
+
+---
+
+## 📦 Items
+
+### Active Items
+
+- **raw.data.pve_backup**  
+  Key: `vfs.file.contents[{$BACKUP_LOCATION}]`  
+  Type: *ZABBIX_ACTIVE*  
+  Purpose: Reads the full JSON log file
+
+### Dependent Items (via LLD)
+
+- `backup.starttime[{#VMID}]` – Backup start time  
+- `backup.endtime[{#VMID}]` – Backup end time  
+- `backup.size[{#VMID}]` – Backup size in bytes  
+- `backup.status[{#VMID}]` – 0/1/2 as status code  
+
+All values are extracted using JSONPath and preprocessing from the master item `vfs.file.contents[...]`.
+
+---
+
+## 🔔 Triggers
+
+- **No backup in `{$BACKUP_TIME}` (VMID: {#VMID})**  
+  Condition: `nodata(/…/backup.endtime[{#VMID}],{$BACKUP_TIME})=1`  
+  → No backup within the specified time frame
+
+- **Backup failed on (VMID: {#VMID})**  
+  Condition: `last(...backup.status[{#VMID}])=0`  
+  → Backup status indicates failure
+
+Both triggers are set to **HIGH** priority.
+
+---
+
+## 🏗 Architecture
+
+```mermaid
+flowchart LR
+  A[Backup Log File (JSON)] --> B[Zabbix Active Item]
+  B --> C[Dependent Items via LLD & JSONPath]
+  C --> D[Trigger Evaluation]
+```
+
+1. Zabbix reads the JSON log (`raw.data.pve_backup`)  
+2. LLD discovers VMID & name  
+3. Dependent items extract start, end, size, status  
+4. Triggers react to conditions or missing backups
+
+---
+
+## 🔧 Customization & Operation
+
+- Adjust `{$BACKUP_LOCATION}` & `{$BACKUP_TIME}` to match your setup  
+- Ensure JSON formatting is correct  
+- Consider log rotation and file size (e.g., set `max_lines`)  
+- Extend with more items/templates if needed
+
+---
+
+## ✅ Conclusion
+
+A compact and effective template for monitoring Proxmox VE backups.  
+Uses modern Zabbix features like active items, preprocessing, LLD, and dependent items – ideal for integration into your infrastructure.
+
+---
+
+**Next Steps:**
+
+- [ ] Add `.md` to your GitHub repo  
+- [ ] Optionally include screenshots or GitHub badges  
+- [ ] Export to HTML for documentation site  
