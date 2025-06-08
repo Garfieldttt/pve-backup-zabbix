@@ -47,20 +47,20 @@ This template is designed for use with the **Zabbix Agent (active)** and require
 ### 1. Ins temporäre Verzeichnis wechseln
 #!/bin/bash
 
-# 1. Change to the temporary directory
+## 1. Change to the temporary directory
 cd /tmp/
 
-# 2. Clone the repository
+## 2. Clone the repository
 git clone https://github.com/Garfieldttt/pve-backup-zabbix.git
 
-# 3. Copy the script and make it executable
+## 3. Copy the script and make it executable
 sudo cp pve-backup-zabbix/7.0/vzdump-hook-json.sh /usr/local/bin/vzdump-hook-json.sh
 sudo chmod +x /usr/local/bin/vzdump-hook-json.sh
 
-# 4. Open crontab and add the job (every 10 minutes)
+## 4. Open crontab and add the job (every 10 minutes)
 crontab -e
-# Then append this line:
-# */10 * * * * /usr/local/bin/vzdump-hook-json.sh
+## Then append this line:
+*/10 * * * * /usr/local/bin/vzdump-hook-json.sh
 
 
 ---
