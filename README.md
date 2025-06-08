@@ -10,6 +10,7 @@ This template is designed for use with the **Zabbix Agent (active)** and require
 | Item                            | Description                                                  |
 |---------------------------------|--------------------------------------------------------------|
 | **backup.status**               | Backup success/failure status (0 = fail, 1 = success). + trigger      |
+| **Trigger: No Recent Backup** | Fires if **no backup has occurred within the last 48 hours**. The time period is configurable via `{$BACKUP_TIME}`. |
 | **backup.starttime**            | Unix timestamp of the last backup start.                     |
 | **backup.endtime**              | Unix timestamp of the last backup end.                       |
 | **backup.starttime (text)**     | Converted start timestamp (human-readable).                  |
