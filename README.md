@@ -81,22 +81,6 @@ Both triggers are set to **HIGH** priority.
 
 ---
 
-## 🏗 Architecture
-
-```mermaid
-flowchart LR
-  A[Backup Log File (JSON)] --> B[Zabbix Active Item]
-  B --> C[Dependent Items via LLD & JSONPath]
-  C --> D[Trigger Evaluation]
-```
-
-1. Zabbix reads the JSON log (`raw.data.pve_backup`)  
-2. LLD discovers VMID & name  
-3. Dependent items extract start, end, size, status  
-4. Triggers react to conditions or missing backups
-
----
-
 ## 🔧 Customization & Operation
 
 - Adjust `{$BACKUP_LOCATION}` & `{$BACKUP_TIME}` to match your setup  
