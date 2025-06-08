@@ -22,7 +22,7 @@ This template is designed for use with the **Zabbix Agent (active)** and require
 ## Features
 
 - VM discovery via Low-Level Discovery (LLD)
-- Backup monitoring per VM based on `vzdump` logs or API
+- Backup monitoring per VM based on `vzdump` logs
 - Timestamp conversion via preprocessing (to readable datetime)
 - Backup size tracking
 - Tagged items and triggers for filtering and automation
