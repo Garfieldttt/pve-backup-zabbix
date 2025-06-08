@@ -2,68 +2,73 @@
 
 LOG_DIR="/var/log/vzdump"
 OUT_FILE="/var/log/backups.log"
+NODE="pve"
 
-# JSON-Datei überschreiben
 echo '{ "backups": [' > "$OUT_FILE"
 first=1
 
 for logfile in "$LOG_DIR"/*.log; do
-    vmid=$(basename "$logfile" | grep -oP '\d+')
-    name=null
-    node="pve"
-    storage=null
-    status="FAILED"
+    [[ ! -s "$logfile" ]] && continue
+
+    vmid=$(basename "$logfile" | grep -oE '[0-9]+')
+    name="null"
+    storage="null"
     size_bytes=0
-    start_ts=$(stat -c %Y "$logfile")
-    end_ts=$start_ts
+    start=$(stat -c %Y "$logfile")
+    end=$start
+
+    status="UNKNOWN"
+    error_found=0
+    finished_found=0
+    started_found=0
 
     while IFS= read -r line; do
-        # Name aus CT oder VM
-        if [[ "$line" == *"CT Name:"* ]]; then
-            match=$(echo "$line" | grep -oP "(?<=CT Name: ).+")
-            [[ -n "$match" ]] && name="\"$match\""
-        elif [[ "$line" == *"VM Name:"* ]]; then
-            match=$(echo "$line" | grep -oP "(?<=VM Name: ).+")
-            [[ -n "$match" ]] && name="\"$match\""
+        [[ "$line" == *"Starting Backup"* ]] && started_found=1
+        [[ "$line" == *"Finished Backup"* ]] && finished_found=1
+        [[ "$line" == *"ERROR:"* ]] && error_found=1
+
+        if [[ "$line" =~ VM\ Name:\ (.+)$ ]]; then
+            name="${BASH_REMATCH[1]}"
         fi
 
-        # Storage aus --repository
-        if [[ "$line" == *"--repository"* ]]; then
-            match=$(echo "$line" | grep -oP -- "--repository\s+\S+@[^:]+:[^:]+(?=\s|$)" | grep -oP ":[^:]+$" | cut -c2-)
-            [[ -n "$match" ]] && storage="\"$match\""
+        if [[ "$line" =~ CT\ Name:\ (.+)$ ]]; then
+            name="${BASH_REMATCH[1]}"
         fi
 
-        # Fallback: Storage aus Upload-Ziel
-        if [[ "$line" == *"Upload directory"* ]]; then
-            match=$(echo "$line" | grep -oP "(?<=@)[^:]+:[^:]+(?='| )" | grep -oP ":[^:]+$" | cut -c2-)
-            [[ -n "$match" && "$storage" == null ]] && storage="\"$match\""
-        fi
-
-        # Größe (falls vorhanden)
-        if [[ "$line" == *"archive file size:"* ]]; then
-            match=$(echo "$line" | grep -oP "(?<=archive file size: )\d+")
-            [[ -n "$match" ]] && size_bytes="$match"
-        fi
-
-        # Status prüfen
-        if echo "$line" | grep -iq "backup finished successfully"; then
-            status="OK"
-        fi
-
-        # Zeitstempel
-        if [[ "$line" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2} ]]; then
-            ts=$(date -d "${line:0:19}" +%s 2>/dev/null)
-            if [[ -n "$ts" ]]; then
-                [[ "$ts" -lt "$start_ts" ]] && start_ts="$ts"
-                [[ "$ts" -gt "$end_ts" ]] && end_ts="$ts"
-            fi
+        if [[ "$line" =~ include\ disk ]]; then
+            match=$(echo "$line" | grep -oP "'[^']+:[^']+'" | head -n1 | cut -d':' -f1 | tr -d "'")
+            [[ -n "$match" ]] && storage="$match"
         fi
     done < "$logfile"
+
+    if [[ "$error_found" -eq 1 ]]; then
+        status="FAILED"
+    elif [[ "$finished_found" -eq 1 ]]; then
+        status="OK"
+    elif [[ "$started_found" -eq 1 ]]; then
+        status="RUNNING"
+    fi
+
+    # JSON quoting, wenn nötig
+    [[ "$name" != "null" ]] && name="\"$name\""
+    [[ "$storage" != "null" ]] && storage="\"$storage\""
 
     [[ $first -eq 0 ]] && echo "," >> "$OUT_FILE"
     first=0
 
-    echo -n "  {\"vmid\":\"$vmid\",\"name\":$name,\"node\":\"$node\",\"start\":$start_ts,\"end\":$end_ts,\"status\":\"$status\",\"storage\":$storage,\"size_bytes\":$size_bytes}" >> "$OUT_FILE"
+    cat >> "$OUT_FILE" <<EOF
+  {
+    "vmid": "$vmid",
+    "name": $name,
+    "node": "$NODE",
+    "start": $start,
+    "end": $end,
+    "status": "$status",
+    "storage": $storage,
+    "size_bytes": $size_bytes
+  }
+EOF
+
 done
 
-echo -e "\n] }" >> "$OUT_FILE"
+echo "] }" >> "$OUT_FILE"
