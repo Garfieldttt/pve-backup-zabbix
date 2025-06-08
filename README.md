@@ -97,8 +97,3 @@ Uses modern Zabbix features like active items, preprocessing, LLD, and dependent
 
 ---
 
-**Next Steps:**
-
-- [ ] Add `.md` to your GitHub repo  
-- [ ] Optionally include screenshots or GitHub badges  
-- [ ] Export to HTML for documentation site  
