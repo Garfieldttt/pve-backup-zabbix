@@ -47,9 +47,6 @@ This template is designed for use with the **Zabbix Agent (active)** and require
 ```bash
 #!/bin/bash
 
-# Update package list and install jq
-sudo apt update && sudo apt install -y jq
-
 # Change to the temporary directory
 cd /tmp/
 
