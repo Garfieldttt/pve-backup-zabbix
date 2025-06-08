@@ -2,7 +2,6 @@
 # Zabbix Integration: Proxmox VE Backup Monitoring
 
 **Template:** `Template Proxmox VE Backup`  
-**Author:** Thomas Rzen  
 **Zabbix Version:** 7.0+  
 ---
 
