@@ -12,21 +12,30 @@ for logfile in "$LOG_DIR"/*.log; do
     [ -e "$logfile" ] || continue
 
     vmid=$(basename "$logfile" | cut -d'-' -f2 | cut -d'.' -f1)
-    name=$(grep -m1 "VM Name:" "$logfile" | sed -E 's/.*VM Name:\s*//')
-    [[ -z "$name" ]] && name=null
 
-    start=$(grep -m1 "Starting Backup" "$logfile" | cut -d' ' -f1-2)
-    end=$(grep -m1 "Finished Backup" "$logfile" | cut -d' ' -f1-2)
-    [[ -z "$end" ]] && end=$(date '+%F %T')
+    name=$(grep -m1 "VM Name:" "$logfile" | sed -E 's/.*VM Name:\s*//')
+    [[ -z "$name" ]] && name=null || name="\"$name\""
+
+    start_line=$(grep -m1 "Starting Backup" "$logfile")
+    end_line=$(grep -m1 "Finished Backup" "$logfile")
+
+    start=$(echo "$start_line" | cut -d' ' -f1-2)
+    end=$(echo "$end_line" | cut -d' ' -f1-2)
 
     start_ts=$(date -d "$start" +%s 2>/dev/null || echo 0)
     end_ts=$(date -d "$end" +%s 2>/dev/null || echo "$start_ts")
 
-    status="FAILED"
-    grep -q "Finished Backup" "$logfile" && status="OK"
-    grep -q "status = running" "$logfile" && status="running"
+    # Status: Priorität: OK > running > FAILED
+    if grep -q "Finished Backup" "$logfile"; then
+        status="OK"
+    elif grep -q "Starting Backup" "$logfile"; then
+        status="running"
+    else
+        status="FAILED"
+    fi
 
-    size_bytes=$(grep -i "transferred" "$logfile" | grep -Eo '[0-9.]+ GiB' | awk '{printf "%.0f\n", $1 * 1024 * 1024 * 1024}' | tail -n1)
+    # Größe extrahieren (z.B. "transferred 45.00 GiB")
+    size_bytes=$(grep -i "transferred" "$logfile" | grep -Eo '[0-9.]+ GiB' | awk '{printf "%.0f", $1 * 1073741824}' | tail -n1)
     [[ -z "$size_bytes" ]] && size_bytes=0
 
     $first_entry || echo "," >> "$OUTPUT"
@@ -35,7 +44,7 @@ for logfile in "$LOG_DIR"/*.log; do
     cat <<EOF >> "$OUTPUT"
     {
       "vmid": "$vmid",
-      "name": ${name:+\"$name\"},
+      "name": $name,
       "node": "$NODE",
       "start": $start_ts,
       "end": $end_ts,
