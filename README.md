@@ -29,6 +29,8 @@ Agentless monitoring of Proxmox VE backup jobs:
 |-----------------------|------------------------------|-----------------------------------------------------|
 | `{$BACKUP_LOCATION}`  | `/var/log/backups.log`       | Path to the JSON backup log                        |
 | `{$BACKUP_TIME}`      | `48h`                        | Time threshold to trigger alert on missing backup  |
+| `{$TRIGGER_BACKUP_FAILED}`      | `1`                        | Enable/Disable the 'Backup failed on(VMID: {#VMID}' trigger with macro  |
+| `{$TRIGGER_NOBACKUP}`      | `1`                        | Enable/Disable the 'No backup in {$BACKUP_TIME} (VMID: {#VMID})' trigger with macro  |
 
 ---
 
