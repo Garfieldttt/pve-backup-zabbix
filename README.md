@@ -48,10 +48,10 @@ Add a line to the crontab of a user with access to the backup log (e.g., `root`)
 crontab -e
 ```
 
-For example, run it every minute (for testing; later consider changing to `*/30`):
+For example, run it every 5 minutes (for testing; later consider changing to `*/5`):
 
 ```bash
-*/1 * * * * /usr/local/bin/convert-log-to-json.sh
+*/5 * * * * /usr/local/bin/convert-log-to-json.sh
 ```
 
 ## ⚙️ Macros
