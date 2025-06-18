@@ -53,6 +53,8 @@ For example, run it every 5 minutes (for testing; later consider changing to `*/
 ```bash
 */5 * * * * /usr/local/bin/convert-log-to-json.sh
 ```
+--- Remove old log files from `/var/log/vzdump/` for VMs/LXCs that no longer exist.
+- Otherwise, old backup logs will continue to be included in `backups.log`.
 
 ## ⚙️ Macros
 
