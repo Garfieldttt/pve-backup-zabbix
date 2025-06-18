@@ -22,6 +22,37 @@ Agentless monitoring of Proxmox VE backup jobs:
 - Template is applied to the host that can read the log file
 
 ---
+## 🛠️ Installation of `vzdump-hook-json.sh`
+
+This script generates the JSON log file that the Zabbix template reads and analyzes.
+
+### 🔽 Step 1: Download the script
+
+Download it directly from GitHub:
+
+```bash
+curl -o /usr/local/bin/convert-log-to-json.sh https://raw.githubusercontent.com/Garfieldttt/pve-backup-zabbix/zabbix/7.0/convert-log-to-json.sh
+```
+
+### 🔐 Step 2: Make it executable
+
+```bash
+chmod +x /usr/local/bin/convert-log-to-json.sh
+```
+
+### 📋 Step 3: Schedule execution (e.g., via Cron)
+
+Add a line to the crontab of a user with access to the backup log (e.g., `root`):
+
+```bash
+crontab -e
+```
+
+For example, run it every minute (for testing; later consider changing to `*/30`):
+
+```bash
+*/1 * * * * /usr/local/bin/convert-log-to-json.sh
+```
 
 ## ⚙️ Macros
 
