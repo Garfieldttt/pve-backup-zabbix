@@ -7,7 +7,7 @@
 
 ## 💡 Overview
 
-Agentless monitoring of Proxmox VE backup jobs:
+Monitoring of Proxmox VE backup jobs:
 - Reads JSON log files (e.g., `/var/log/backups.log`)
 - Detects VMs via Low-Level-Discovery
 - Extracts backup start/end times, size & status
