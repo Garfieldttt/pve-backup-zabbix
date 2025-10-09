@@ -37,27 +37,12 @@ zabbix_export:
               preprocessing:
                 - type: JSONPATH
                   parameters:
-                    - '$.backups[?(@.vmid == "{#VMID}")].end'
-                - type: LTRIM
-                  parameters:
-                    - '["'
-                - type: RTRIM
-                  parameters:
-                    - '"]'
-                - type: DISCARD_UNCHANGED
-                  parameters:
-                    - ''
+                    - '$.backups[?(@.vmid == "{#VMID}")].end.first()'
               master_item:
                 key: 'vfs.file.contents[{$BACKUP_LOCATION}]'
               tags:
                 - tag: pve-backup
                   value: end-time
-              trigger_prototypes:
-                - uuid: 204da82367114c24a98bfc1cf5d2d40d
-                  expression: 'nodata(/Template Proxmox VE Backup/backup.endtime[{#VMID}],{$BACKUP_TIME:"{#VMID}"})=1'
-                  name: 'No backup in {$BACKUP_TIME} (VMID: {#VMID})'
-                  priority: HIGH
-                  manual_close: 'YES'
             - uuid: c023e0ec96c94720a38617b463763966
               name: 'Backup size (last) - VM {#VMID} ({#NAME})'
               type: DEPENDENT
@@ -68,13 +53,7 @@ zabbix_export:
               preprocessing:
                 - type: JSONPATH
                   parameters:
-                    - '$.backups[?(@.vmid == "{#VMID}")].size_bytes'
-                - type: LTRIM
-                  parameters:
-                    - '["'
-                - type: RTRIM
-                  parameters:
-                    - '"]'
+                    - '$.backups[?(@.vmid == "{#VMID}")].size_bytes.first()'
               master_item:
                 key: 'vfs.file.contents[{$BACKUP_LOCATION}]'
               tags:
@@ -89,16 +68,7 @@ zabbix_export:
               preprocessing:
                 - type: JSONPATH
                   parameters:
-                    - '$.backups[?(@.vmid == "{#VMID}")].start'
-                - type: LTRIM
-                  parameters:
-                    - '["'
-                - type: RTRIM
-                  parameters:
-                    - '"]'
-                - type: DISCARD_UNCHANGED
-                  parameters:
-                    - ''
+                    - '$.backups[?(@.vmid == "{#VMID}")].start.first()'
               master_item:
                 key: 'vfs.file.contents[{$BACKUP_LOCATION}]'
               tags:
@@ -118,13 +88,7 @@ zabbix_export:
               preprocessing:
                 - type: JSONPATH
                   parameters:
-                    - '$.backups[?(@.vmid == "{#VMID}")].status'
-                - type: LTRIM
-                  parameters:
-                    - '["'
-                - type: RTRIM
-                  parameters:
-                    - '"]'
+                    - '$.backups[?(@.vmid == "{#VMID}")].status.first()'
                 - type: STR_REPLACE
                   parameters:
                     - OK
@@ -144,7 +108,7 @@ zabbix_export:
                   value: status
               trigger_prototypes:
                 - uuid: c39a40fb015a46cbbf62252418249283
-                  expression: 'last(/Template Proxmox VE Backup/backup.status[{#VMID}])=0'
+                  expression: 'last(/Template Proxmox VE Backup/backup.status[{#VMID}])=0 and {$TRIGGER_BACKUP_FAILED:"{#VMID}"}=1'
                   name: 'Backup failed on(VMID: {#VMID}'
                   opdata: '{HOST.NAME}: {#NAME} (VMID: {#VMID})'
                   priority: HIGH
@@ -169,6 +133,12 @@ zabbix_export:
         - macro: '{$BACKUP_TIME}'
           value: 48h
           description: 'The time period Zabbix waits before triggering if no backup has been made. Possible values: s = seconds, m = minutes, h = hours, d = days.'
+        - macro: '{$TRIGGER_BACKUP_FAILED}'
+          value: '1'
+          description: '1=on 0=off'
+        - macro: '{$TRIGGER_NOBACKUP}'
+          value: '1'
+          description: '1=on 0=off'
       valuemaps:
         - uuid: 446a711ec6424c7ea2ff76f6a64b0707
           name: BACKUP-STATUS
