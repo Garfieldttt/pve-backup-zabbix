@@ -1,15 +1,14 @@
 zabbix_export:
-  version: '7.0'
+  version: '7.4'
   template_groups:
     - uuid: 7df96b18c230490a9a0a9e2307226338
       name: Templates
   templates:
     - uuid: 173b3af4d31543a19b0379f2d489d527
-      template: 'Template Proxmox VE Backup'
-      name: 'Template Proxmox VE Backup'
+      template: 'Proxmox VE Backup'
+      name: 'Proxmox VE Backup'
       description: |
         Author: Thomas Rzen
-        
         For more information, visit https://github.com/Garfieldttt/pve-backup-zabbix
       groups:
         - name: Templates
@@ -18,21 +17,41 @@ zabbix_export:
           name: raw.data.pve_backup
           type: ZABBIX_ACTIVE
           key: 'vfs.file.contents[{$BACKUP_LOCATION}]'
-          history: 1d
+          delay: 5m
+          history: '0'
           value_type: TEXT
-          trends: '0'
+          tags:
+            - tag: pve-backup
+              value: raw
+            - tag: 'Zabbix raw items'
       discovery_rules:
         - uuid: 895a1aa8cc824877b5373281f86f9aba
           name: pve-backup
           type: DEPENDENT
           key: pve-backup.stat
-          delay: '0'
           item_prototypes:
+            - uuid: 30520dd8833c4b8c81d4b6e3dc69e673
+              name: 'Backup duration {#VMID} {#NAME}'
+              type: DEPENDENT
+              key: 'backup.duration[{#VMID}]'
+              history: 7d
+              units: uptime
+              preprocessing:
+                - type: JSONPATH
+                  parameters:
+                    - '$.backups[?(@.vmid == "{#VMID}")].duration.first()'
+              master_item:
+                key: 'vfs.file.contents[{$BACKUP_LOCATION}]'
+              tags:
+                - tag: pve-backup
+                  value: duration-time
+                - tag: pve-backup
+                  value: '{#VMID}'
             - uuid: 319bb0450d6e43838c726a82d764c71f
               name: 'Backup end-time {#VMID} {#NAME}'
               type: DEPENDENT
               key: 'backup.endtime[{#VMID}]'
-              delay: '0'
+              history: 7d
               units: unixtime
               preprocessing:
                 - type: JSONPATH
@@ -43,11 +62,24 @@ zabbix_export:
               tags:
                 - tag: pve-backup
                   value: end-time
+                - tag: pve-backup
+                  value: '{#VMID}'
+              trigger_prototypes:
+                - uuid: 837c2c8b03304d6bb416a194a454a23f
+                  expression: 'nodata(/Proxmox VE Backup/backup.endtime[{#VMID}],{$BACKUP_TIME})=1 and {$TRIGGER_NOBACKUP:"{#VMID}"}=1'
+                  name: 'No backup in {$BACKUP_TIME} (VMID: {#VMID}'
+                  opdata: '{HOST.NAME}: {#NAME} (VMID: {#VMID})'
+                  priority: AVERAGE
+                  tags:
+                    - tag: pve-backup
+                      value: nodata
+                    - tag: pve-backup
+                      value: '{#VMID}'
             - uuid: c023e0ec96c94720a38617b463763966
               name: 'Backup size (last) - VM {#VMID} ({#NAME})'
               type: DEPENDENT
               key: 'backup.size[{#VMID}]'
-              delay: '0'
+              history: 7d
               value_type: FLOAT
               units: byte
               preprocessing:
@@ -59,11 +91,13 @@ zabbix_export:
               tags:
                 - tag: pve-backup
                   value: size
-            - uuid: 30520dd8833c4b8c81d4b6e3dc69e673
+                - tag: pve-backup
+                  value: '{#VMID}'
+            - uuid: b6410eb255ab4a7cb5ae3a86b3ff6ade
               name: 'Backup start-time {#VMID} {#NAME}'
               type: DEPENDENT
               key: 'backup.starttime[{#VMID}]'
-              delay: '0'
+              history: 7d
               units: unixtime
               preprocessing:
                 - type: JSONPATH
@@ -73,12 +107,13 @@ zabbix_export:
                 key: 'vfs.file.contents[{$BACKUP_LOCATION}]'
               tags:
                 - tag: pve-backup
-                  value: start-time
+                  value: end-time
+                - tag: pve-backup
+                  value: '{#VMID}'
             - uuid: 9146e966a985489ca0498fcb0723c3b6
               name: 'Backup status {#VMID} {#NAME}'
               type: DEPENDENT
               key: 'backup.status[{#VMID}]'
-              delay: '0'
               value_type: FLOAT
               description: |
                 Backup status of the VM based on vzdump log.
@@ -106,12 +141,19 @@ zabbix_export:
               tags:
                 - tag: pve-backup
                   value: status
+                - tag: pve-backup
+                  value: '{#VMID}'
               trigger_prototypes:
                 - uuid: c39a40fb015a46cbbf62252418249283
-                  expression: 'last(/Template Proxmox VE Backup/backup.status[{#VMID}])=0 and {$TRIGGER_BACKUP_FAILED:"{#VMID}"}=1'
-                  name: 'Backup failed on(VMID: {#VMID}'
+                  expression: 'last(/Proxmox VE Backup/backup.status[{#VMID}])=0 and {$TRIGGER_BACKUP_FAILED:"{#VMID}"}=1'
+                  name: 'Backup failed on (VMID: {#VMID}'
                   opdata: '{HOST.NAME}: {#NAME} (VMID: {#VMID})'
-                  priority: HIGH
+                  priority: AVERAGE
+                  tags:
+                    - tag: pve-backup
+                      value: failed
+                    - tag: pve-backup
+                      value: '{#VMID}'
           master_item:
             key: 'vfs.file.contents[{$BACKUP_LOCATION}]'
           lld_macro_paths:
