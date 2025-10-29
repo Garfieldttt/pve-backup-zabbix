@@ -2,6 +2,7 @@
 
 LOG_DIR="/var/log/vzdump"
 OUTPUT="/var/log/backups.log"
+NONBACKUPLOG="/var/log/nonbackups.log"
 NODE="pve"
 
 echo '{ "backups": [' > "$OUTPUT"
@@ -10,7 +11,13 @@ first_entry=true
 
 for logfile in "$LOG_DIR"/*.log; do
     [ -e "$logfile" ] || continue
-
+    
+    #initializing variables
+    start_ts=0
+    end_ts=0
+    duration=0
+    size_bytes=0
+    
     # VM ID from filename
     vmid=$(basename "$logfile" | cut -d'-' -f2 | cut -d'.' -f1)
 
@@ -27,6 +34,8 @@ for logfile in "$LOG_DIR"/*.log; do
 
     start_ts=$(date -d "$start" +%s 2>/dev/null || echo 0)
     end_ts=$(date -d "$end" +%s 2>/dev/null || echo "$start_ts")
+
+    let "duration = $end_ts - $start_ts"
 
     # Detect errors
     error_line=$(grep -E "ERROR:" "$logfile" | tail -n1 | sed -E 's/.*ERROR:\s*//')
@@ -45,9 +54,26 @@ for logfile in "$LOG_DIR"/*.log; do
         fi
     fi
 
-    # Size in bytes
-    size_bytes=$(grep -i "transferred" "$logfile" | grep -Eo '[0-9.]+ GiB' | awk '{printf "%.0f", $1 * 1073741824}' | tail -n1)
-    [[ -z "$size_bytes" ]] && size_bytes=0
+    size=$(grep -i "transferred" "$logfile" | grep -oP 'transferred \K[0-9.]+' | awk '{printf "%.0f", $1 }' | tail -n1)
+    [[ -z "$size" ]] && size=0
+
+    size_suffix=$(grep -oP 'transferred [0-9.]+ \K[KMG]iB' "$logfile")
+    [[ -z "$size_suffix" ]] && size_suffix="NoN"
+
+    case $size_suffix in
+      "GiB")
+        let "size_bytes = $size * 1073741824"
+      ;;
+      "MiB")
+        let "size_bytes = $size * 10485761"
+      ;;
+      "KiB")
+        let "size_bytes = $size * 1024"
+      ;;
+      *)
+        size_bytes=0
+      ;;
+    esac
 
     # JSON output formatting
     $first_entry || echo "," >> "$OUTPUT"
@@ -60,6 +86,7 @@ for logfile in "$LOG_DIR"/*.log; do
       "node": "$NODE",
       "start": $start_ts,
       "end": $end_ts,
+      "duration": $duration,
       "status": "$status",
       "size_bytes": $size_bytes,
       "error": $error_json
@@ -69,3 +96,7 @@ EOF
 done
 
 echo "] }" >> "$OUTPUT"
+
+#list VM without backup
+/usr/bin/pvesh get /cluster/backup-info/not-backed-up --output-format json  > "$NONBACKUPLOG"
+#
